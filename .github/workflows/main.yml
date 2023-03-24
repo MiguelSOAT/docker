@@ -10,6 +10,7 @@ jobs:
       - run: cd ~/docker || mkdir ~/docker && cd ~/docker
       - name: Check out repository code
         uses: actions/checkout@v3
+      - run: docker-compose down && docker-compose up -d || docker-compose up -d
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       # - run: pwd
       # - run: npm i
