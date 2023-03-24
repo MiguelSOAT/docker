@@ -1,6 +1,10 @@
-version: '3'
+version: "3"
 services:
   mongodb:
+    container_name: mongodb
+    hostname: mongodb
+    networks:
+      - backend
     image: mongo:5.0
     environment:
       - MONGO_INITDB_ROOT_USERNAME=TFM_MONGO
@@ -8,12 +12,110 @@ services:
     ports:
       - 27017:27017
   mysql:
-    image: mysql
-        # NOTE: use of "mysql_native_password" is not recommended: https://dev.mysql.com/doc/refman/8.0/en/upgrading-from-previous-series.html#upgrade-caching-sha2-password
-        # (this is just an example, not intended to be a production configuration)
+    container_name: mysql
+    hostname: mysql
+    networks:
+      - backend
+    image:
+      mysql
+      # NOTE: use of "mysql_native_password" is not recommended: https://dev.mysql.com/doc/refman/8.0/en/upgrading-from-previous-series.html#upgrade-caching-sha2-password
+      # (this is just an example, not intended to be a production configuration)
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: pwd
     ports:
       - 3308:3306
+    volumes:
+      - /opt/mysql_data:/var/lib/mysql
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    hostname: zookeeper
+    networks:
+      - backend
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.3.0
+    hostname: broker
+    networks:
+      - backend
+    container_name: broker
+    ports:
+      # To learn about configuring Kafka for access across networks see
+      # https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 50s
+      retries: 10
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    restart: always
+    networks:
+      - backend
+    image: nginx:1.16.0-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/build:/var/www/html
+    ports:
+      - "80:80"
+
+  cloud-core:
+    container_name: cloud-core
+    hostname: cloud-core
+    depends_on:
+      broker:
+        condition: service_healthy
+    networks:
+      - backend
+    image: ${NODEJS_CONTAINER_IMAGE}
+    user: ${NODEJS_USER}
+    command: ${NODEJS_COMMAND}
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: ${NODEJS_ENV}
+    volumes:
+      - ${NODEJS_CLOUD_CORE_PWD}:/home/node/project
+    working_dir: /home/node/project
+
+  telegram-bot:
+    container_name: telegram-bot
+    hostname: telegram-bot
+    depends_on:
+      broker:
+        condition: service_healthy
+    networks:
+      - backend
+    image: ${NODEJS_CONTAINER_IMAGE}
+    user: ${NODEJS_USER}
+    command: ${NODEJS_COMMAND}
+    environment:
+      NODE_ENV: ${NODEJS_ENV}
+    volumes:
+      - ${NODEJS_TELEGRAM_BOT_PWD}:/home/node/project
+    working_dir: /home/node/project
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
