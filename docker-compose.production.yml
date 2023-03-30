@@ -60,7 +60,7 @@ services:
     hostname: nginx
     image: nginx:1.16.0-alpine
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ${NODEJS_CLOUD_FRONT_BUILD_PWD}:/var/www/html
     ports:
       - "80:80"
@@ -85,26 +85,6 @@ services:
       NODE_ENV: ${NODEJS_ENV}
     volumes:
       - ${NODEJS_CLOUD_CORE_PWD}:/home/node/project
-    working_dir: /home/node/project
-    restart: unless-stopped
-
-  cloud-front:
-    container_name: cloud-front
-    hostname: cloud-front
-    depends_on:
-      broker:
-        condition: service_healthy
-    networks:
-      - backend
-    image: ${NODEJS_CONTAINER_IMAGE}
-    user: ${NODEJS_USER}
-    command: ${NODEJS_COMMAND_FRONT}
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: ${NODEJS_ENV}
-    volumes:
-      - ${NODEJS_CLOUD_FRONT_PWD}:/home/node/project
     working_dir: /home/node/project
     restart: unless-stopped
 
