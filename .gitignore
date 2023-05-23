@@ -1,3 +1,5 @@
 *.zip
 mysql
 mongodb
+docker-compose.production.yml
+nginx/nginx.prod.conf
