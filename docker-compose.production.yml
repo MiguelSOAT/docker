@@ -24,6 +24,7 @@ services:
     ports:
       - 3306:3306
     volumes:
+      - ./sql_queries/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
     networks:
@@ -61,10 +62,14 @@ services:
     container_name: nginx
     hostname: nginx
     image: nginx:1.16.0-alpine
+    depends_on:
+      broker:
+        condition: service_healthy
     volumes:
       - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ${NODEJS_CLOUD_FRONT_BUILD_PWD}:/var/www/html/cloud
       - ${NODEJS_PORTFOLIO_PWD}:/var/www/html/portfolio
+      - nginx_cache:/data/nginx/cache
     ports:
       - '80:80'
     networks:
@@ -72,6 +77,11 @@ services:
     restart: unless-stopped
 
   cloud-core:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        - LOCAL_PATH=${NODEJS_CLOUD_CORE_PWD}
     container_name: cloud-core
     hostname: cloud-core
     depends_on:
@@ -79,20 +89,20 @@ services:
         condition: service_healthy
     networks:
       - backend
-    image: ${NODEJS_CONTAINER_IMAGE}
-    user: ${NODEJS_USER}
-    command: ${NODEJS_COMMAND}
     ports:
       - '8080:8080'
     environment:
       NODE_ENV: ${NODEJS_ENV}
     volumes:
       - ${NODEJS_CLOUD_CORE_PWD}:/home/node/project
-      - node_modules_cloud-core:/home/node/project/node_modules
-    working_dir: /home/node/project
     restart: unless-stopped
 
   telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        - LOCAL_PATH=${NODEJS_TELEGRAM_BOT_PWD}
     container_name: telegram-bot
     hostname: telegram-bot
     depends_on:
@@ -100,15 +110,10 @@ services:
         condition: service_healthy
     networks:
       - backend
-    image: ${NODEJS_CONTAINER_IMAGE}
-    user: ${NODEJS_USER}
-    command: ${NODEJS_COMMAND}
     environment:
       NODE_ENV: ${NODEJS_ENV}
     volumes:
       - ${NODEJS_TELEGRAM_BOT_PWD}:/home/node/project
-      - node_modules_telegram-bot:/home/node/project/node_modules:ro
-    working_dir: /home/node/project
     restart: unless-stopped
 
 networks:
@@ -118,5 +123,4 @@ networks:
 volumes:
   mongodb_data:
   mysql_data:
-  node_modules_telegram-bot:
-  node_modules_cloud-core:
+  nginx_cache:

@@ -1,0 +1,12 @@
+# Utilizamos una imagen base con Node.js instalado
+FROM node:19
+
+# Establecemos el directorio de trabajo en el contenedor
+WORKDIR /home/node/project
+
+# Copiamos los archivos del proyecto al contenedor
+COPY ${LOCAL_PATH}/package*.json ./
+COPY ${LOCAL_PATH} .
+
+# Especificamos el comando que se ejecutará cuando el contenedor se inicie
+CMD [ "npm", "run", "start:prod" ]
