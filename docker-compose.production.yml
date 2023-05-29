@@ -12,7 +12,7 @@ services:
     networks:
       - backend
     volumes:
-      - ./mongodb/mongodb_data:/data/db
+      - mongodb_data:/data/db
 
   mysql:
     container_name: mysql
@@ -24,7 +24,7 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./mysql/mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     restart: unless-stopped
     networks:
       - backend
@@ -88,6 +88,7 @@ services:
       NODE_ENV: ${NODEJS_ENV}
     volumes:
       - ${NODEJS_CLOUD_CORE_PWD}:/home/node/project
+      - node_modules_cloud-core:/home/node/project/node_modules
     working_dir: /home/node/project
     restart: unless-stopped
 
@@ -106,9 +107,16 @@ services:
       NODE_ENV: ${NODEJS_ENV}
     volumes:
       - ${NODEJS_TELEGRAM_BOT_PWD}:/home/node/project
+      - node_modules_telegram-bot:/home/node/project/node_modules:ro
     working_dir: /home/node/project
     restart: unless-stopped
 
 networks:
   backend:
     driver: bridge
+
+volumes:
+  mongodb_data:
+  mysql_data:
+  node_modules_telegram-bot:
+  node_modules_cloud-core:
