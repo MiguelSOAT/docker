@@ -61,7 +61,9 @@ services:
   nginx:
     container_name: nginx
     hostname: nginx
-    image: nginx:1.16.0-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     depends_on:
       broker:
         condition: service_healthy
@@ -70,8 +72,13 @@ services:
       - ${NODEJS_CLOUD_FRONT_BUILD_PWD}:/var/www/html/cloud
       - ${NODEJS_PORTFOLIO_PWD}:/var/www/html/portfolio
       - nginx_cache:/data/nginx/cache
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-files-portfolio:/certbot-files/portfolio
+      - certbot-files-cloud:/certbot-files/cloud
     ports:
       - '80:80'
+      - '443:443'
     networks:
       - backend
     restart: unless-stopped
@@ -116,6 +123,18 @@ services:
       - ${NODEJS_TELEGRAM_BOT_PWD}:/home/node/project
     restart: unless-stopped
 
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-files-portfolio:/certbot-files/portfolio
+      - certbot-files-cloud:/certbot-files/cloud
+    depends_on:
+      - nginx
+    command: certonly --webroot --email miguelsorianoatienza@gmail.com --agree-tos --no-eff-email -w /certbot-files/portfolio -d miguelsoat.com  -d www.miguelsoat.com -w /certbot-files/cloud -d cloud.miguelsoat.com
+
 networks:
   backend:
     driver: bridge
@@ -124,3 +143,7 @@ volumes:
   mongodb_data:
   mysql_data:
   nginx_cache:
+  certbot-etc:
+  certbot-var:
+  certbot-files-cloud:
+  certbot-files-portfolio:

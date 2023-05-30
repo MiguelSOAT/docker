@@ -1,0 +1,9 @@
+# Utilizamos una imagen base con Node.js instalado
+FROM nginx:1.16.0-alpine
+
+# Establecemos el directorio de trabajo en el contenedor
+WORKDIR /etc/ssl/certs/
+
+# Copiamos los archivos del proyecto al contenedor
+RUN apk add --no-cache openssl
+RUN openssl dhparam -out dhparam-2048.pem 2048
