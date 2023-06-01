@@ -89,6 +89,7 @@ services:
       dockerfile: Dockerfile.node
       args:
         - LOCAL_PATH=${NODEJS_CLOUD_CORE_PWD}
+        - LOCAL_START_COMMAND=start:prod
     container_name: cloud-core
     hostname: cloud-core
     depends_on:
@@ -110,6 +111,7 @@ services:
       dockerfile: Dockerfile.node
       args:
         - LOCAL_PATH=${NODEJS_TELEGRAM_BOT_PWD}
+        - LOCAL_START_COMMAND=start:prod
     container_name: telegram-bot
     hostname: telegram-bot
     depends_on:

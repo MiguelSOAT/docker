@@ -12,7 +12,7 @@ services:
     networks:
       - backend
     volumes:
-      - ./mongodb/mongodb_data:/data/db
+      - mongodb_data:/data/db
 
   mysql:
     container_name: mysql
@@ -24,7 +24,8 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./mysql/mysql_data:/var/lib/mysql
+      - ./sql_queries/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
     restart: unless-stopped
     networks:
       - backend
@@ -128,6 +129,10 @@ services:
       - ${NODEJS_TELEGRAM_BOT_PWD}:/home/node/project
     working_dir: /home/node/project
     restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  mysql_data:
 
 networks:
   backend:
